@@ -109,7 +109,6 @@ def replace_with_skip(cell, reason):
 with open(SRC, "r", encoding="utf-8") as f:
     nb = json.load(f)
 
-tainted = set()
 defined = set(ALLOWED_PREDEFINED)
 skipped = []
 unresolved = []
@@ -132,16 +131,14 @@ for i, cell in enumerate(nb.get("cells", [])):
     defs, uses = module_symbols(code)
 
     explicit = is_explicit_legacy_skip(original)
-    inherited = sorted(uses & tainted)
     protected_current = any(marker in original for marker in PROTECTED_CURRENT_MARKERS)
 
-    if (explicit or inherited) and not protected_current:
-        tainted.update(defs)
-        reason = (
-            f"CI: skipped legacy/Colab cell {i}"
-            if explicit
-            else f"CI: skipped cell {i}; depends on skipped names: {', '.join(inherited)}"
-        )
+    # Only explicitly identified legacy/Colab cells are skipped. Do not
+    # propagate skipped variable names transitively: common imports such as
+    # np/pd/plt/StandardScaler are reused throughout the notebook and treating
+    # them as "tainted" caused valid current experiment cells to disappear.
+    if explicit and not protected_current:
+        reason = f"CI: skipped legacy/Colab cell {i}"
         replace_with_skip(cell, reason)
         skipped.append((i, reason, sorted(defs)))
         continue
@@ -157,11 +154,6 @@ for i, cell in enumerate(nb.get("cells", [])):
         if name not in defined and name not in defs and name not in ALLOWED_PREDEFINED
     )
 
-    # A protected current-experiment cell may reference a name produced by a
-    # skipped legacy cell. Treat that as unresolved explicitly; do not let the
-    # tainted-name filter hide it.
-    if protected_current:
-        missing = sorted(set(missing) | (uses & tainted))
     if missing:
         unresolved.append((i, missing, code[:240]))
 
