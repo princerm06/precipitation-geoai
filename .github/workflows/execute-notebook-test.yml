@@ -64,6 +64,20 @@ jobs:
                   cell["outputs"] = []
                   continue
 
+              # CI only: skip historical/optional DEM work so the runner focuses
+              # on the current PIDF + MLP/Optuna experiment.
+              if (
+                  "dem_tiles" in code
+                  or "elevation" in code.lower() and "pidf" not in code.lower()
+              ):
+                  skipped.append(i)
+                  cell["source"] = [
+                      "print('CI: skipped optional DEM/elevation cell')\n"
+                  ]
+                  cell["execution_count"] = None
+                  cell["outputs"] = []
+                  continue
+
               if 'open("data.txt"' in code or "open('data.txt'" in code:
                   skipped.append(i)
                   cell["source"] = [
