@@ -65,12 +65,15 @@ jobs:
                   continue
 
               if "files.download(" in code:
-                  cleaned = []
-                  for line in cell.get("source", []):
-                      if "files.download(" not in line:
-                          cleaned.append(line)
-                  cleaned.append("print('CI: skipped Colab-only files.download call')\n")
-                  cell["source"] = cleaned
+                  cleaned_code = "\n".join(
+                      line.rstrip("\n")
+                      for line in cell.get("source", [])
+                      if "files.download(" not in line
+                  )
+                  cleaned_code += "\nprint('CI: skipped Colab-only files.download call')\n"
+                  cell["source"] = [
+                      line + "\n" for line in cleaned_code.rstrip("\n").split("\n")
+                  ]
                   cell["execution_count"] = None
                   cell["outputs"] = []
 
