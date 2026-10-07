@@ -112,6 +112,18 @@ for i, cell in enumerate(cells):
     original = source_text(cell)
     code = sanitize(original)
 
+    # CI is a correctness check, not the full research run. Keep the source
+    # notebook untouched, but use a smaller sample and fewer Optuna trials here
+    # so GitHub's CPU runner can finish well inside the job timeout.
+    code = code.replace(
+        "pidf.sample(n=250000, random_state=42)",
+        "pidf.sample(n=50000, random_state=42)",
+    )
+    code = code.replace(
+        "study.optimize(objective, n_trials=25)",
+        "study.optimize(objective, n_trials=3)",
+    )
+
     # In CI the NOAA rasters are downloaded deterministically by the workflow,
     # so replace any Colab/upload-derived ASC discovery with a recursive glob.
     # This prevents asc_files_pidf from being defined as an empty list.
