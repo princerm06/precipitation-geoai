@@ -1,4 +1,4 @@
-name: Apply mentor MLP edits part 1
+name: Apply mentor notebook edits
 
 on:
   push:
@@ -20,8 +20,8 @@ jobs:
         with:
           ref: mentor-mlp-optuna
 
-      - name: Apply notebook edits
-        run: python scripts/apply_mentor_edits_part1.py
+      - name: Apply next two notebook edits
+        run: python scripts/apply_mentor_edits_part2.py
 
       - name: Commit notebook changes
         run: |
@@ -31,6 +31,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No notebook changes to commit."
           else
-            git commit -m "Add spatial accounting and MLP learning curves"
+            git commit -m "Add spatial Optuna validation and MLP tuning"
             git push origin mentor-mlp-optuna
           fi
