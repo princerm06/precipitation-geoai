@@ -32,12 +32,18 @@ jobs:
 
       - name: Download NOAA source data
         run: |
-          curl -fL "https://hdsc.nws.noaa.gov/pub/hdsc/data/se/se200yr24ha.zip" -o se200yr24ha.zip
-          mkdir -p se200yr24ha
-          unzip -q se200yr24ha.zip -d se200yr24ha
-          test -f se200yr24ha/se200yr24ha.asc
-          ls -lh se200yr24ha/se200yr24ha.asc
-          echo "NOAA source ready"
+          set -euo pipefail
+          for rp in 2 5 10 25 50 100 200; do
+            for dur in 60m 06h 12h 24h; do
+              stem="se${rp}yr${dur}a"
+              curl -fL "https://hdsc.nws.noaa.gov/pub/hdsc/data/se/${stem}.zip" -o "${stem}.zip"
+              mkdir -p "${stem}"
+              unzip -q "${stem}.zip" -d "${stem}"
+              test -f "${stem}/${stem}.asc"
+            done
+          done
+          test "$(find . -maxdepth 2 -type f -name 'se*yr*a.asc' | wc -l)" -eq 28
+          echo "NOAA PIDF source ready: 28 ASC rasters"
 
       - name: Build dependency-safe CI notebook
         run: |
