@@ -32,7 +32,8 @@ jobs:
       - name: Download NOAA source data
         run: |
           curl -fL "https://hdsc.nws.noaa.gov/pub/hdsc/data/se/se200yr24ha.zip" -o se200yr24ha.zip
-          ls -lh se200yr24ha.zip\n          echo "NOAA source ready"
+          ls -lh se200yr24ha.zip
+          echo "NOAA source ready"
 
       - name: Make CI-safe notebook copy
         run: |
