@@ -69,9 +69,9 @@ jobs:
               if (
                   "dem_tiles" in code
                   or ("elevation" in code.lower() and "pidf" not in code.lower())
-                  or "X_elev" in code
-                  or "rf_elev" in code
+                  or "_elev" in code
                   or "feature_importance" in code
+                  or "xgb" in code.lower()
               ):
                   skipped.append(i)
                   cell["source"] = [
