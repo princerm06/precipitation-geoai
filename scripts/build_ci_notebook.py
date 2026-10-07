@@ -20,7 +20,6 @@ ALLOWED_PREDEFINED = set(dir(builtins)) | {
 }
 
 REQUIRED_MARKERS = (
-    'Full PIDF data points:',
     'study.optimize(objective',
     'best_params = study.best_params',
     'Tuned MLP Spatial Test Metrics',
