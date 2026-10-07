@@ -29,6 +29,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install jupyter nbconvert pandas numpy scikit-learn matplotlib tensorflow optuna geopandas shapely requests xgboost
 
+      - name: Download NOAA source data
+        run: |
+          curl -fL "https://hdsc.nws.noaa.gov/pub/hdsc/data/se/se200yr24ha.zip" -o se200yr24ha.zip
+          ls -lh se200yr24ha.zip
+
       - name: Make CI-safe notebook copy
         run: |
           python - <<'PY'
