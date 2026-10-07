@@ -64,6 +64,15 @@ jobs:
                   cell["outputs"] = []
                   continue
 
+              if 'open("data.txt"' in code or "open('data.txt'" in code:
+                  skipped.append(i)
+                  cell["source"] = [
+                      "print('CI: skipped optional DEM download cell requiring data.txt')\n"
+                  ]
+                  cell["execution_count"] = None
+                  cell["outputs"] = []
+                  continue
+
               if "files.download(" in code:
                   cleaned_code = "\n".join(
                       line.rstrip("\n")
