@@ -1,0 +1,45 @@
+name: Execute PIDF notebook test
+
+on:
+  push:
+    branches:
+      - mentor-mlp-optuna
+    paths:
+      - ".github/workflows/execute-notebook-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mentor-mlp-optuna
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install notebook runtime
+        run: |
+          python -m pip install --upgrade pip
+          pip install jupyter nbconvert pandas numpy scikit-learn matplotlib tensorflow optuna geopandas shapely requests xgboost
+
+      - name: Execute notebook
+        run: |
+          jupyter nbconvert --to notebook --execute UNG_PIDF_Model.ipynb \
+            --output executed_UNG_PIDF_Model.ipynb \
+            --ExecutePreprocessor.timeout=2700 \
+            --ExecutePreprocessor.kernel_name=python3
+
+      - name: Upload executed notebook
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebook
+          path: executed_UNG_PIDF_Model.ipynb
+          if-no-files-found: ignore
