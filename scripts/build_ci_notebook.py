@@ -154,6 +154,28 @@ for i, cell in enumerate(nb.get("cells", [])):
         if name not in defined and name not in defs and name not in ALLOWED_PREDEFINED
     )
 
+    # Historical export-only cells can remain after their upstream legacy
+    # comparison tables are intentionally skipped. They do not contribute to
+    # the current PIDF/MLP/Optuna experiment, so skip the export cell rather
+    # than failing preflight on its missing table variable.
+    export_only = (
+        ".to_csv(" in code
+        and all(
+            stripped.startswith(("print(", "#"))
+            or ".to_csv(" in stripped
+            or stripped == ""
+            for stripped in (line.strip() for line in code.splitlines())
+        )
+    )
+    if missing and export_only and not protected_current:
+        reason = (
+            f"CI: skipped legacy export-only cell {i}; "
+            f"missing source names: {', '.join(missing)}"
+        )
+        replace_with_skip(cell, reason)
+        skipped.append((i, reason, sorted(defs)))
+        continue
+
     if missing:
         unresolved.append((i, missing, code[:240]))
 
