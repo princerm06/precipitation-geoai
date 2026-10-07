@@ -1,0 +1,36 @@
+name: Apply mentor MLP edits part 2
+
+on:
+  push:
+    branches:
+      - mentor-mlp-optuna
+    paths:
+      - ".github/workflows/apply-mentor-edits-part2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-notebook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: mentor-mlp-optuna
+
+      - name: Apply notebook edits
+        run: python scripts/apply_mentor_edits_part2.py
+
+      - name: Commit notebook changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add UNG_PIDF_Model.ipynb
+          if git diff --cached --quiet; then
+            echo "No notebook changes to commit."
+          else
+            git commit -m "Add spatial Optuna validation and MLP tuning"
+            git push origin mentor-mlp-optuna
+          fi
