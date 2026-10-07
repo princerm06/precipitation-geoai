@@ -111,6 +111,20 @@ for i, cell in enumerate(cells):
         continue
     original = source_text(cell)
     code = sanitize(original)
+
+    # In CI the NOAA rasters are downloaded deterministically by the workflow,
+    # so replace any Colab/upload-derived ASC discovery with a recursive glob.
+    # This prevents asc_files_pidf from being defined as an empty list.
+    probe_defs, _ = symbols(code)
+    if "asc_files_pidf" in probe_defs:
+        code = (
+            "import glob\n"
+            "asc_files_pidf = sorted(glob.glob('se*yr*a/se*yr*a.asc'))\n"
+            "print('CI ASC files:', len(asc_files_pidf))\n"
+            "assert len(asc_files_pidf) == 28, "
+            "'Expected 28 NOAA PIDF ASC rasters'\n"
+        )
+
     defs, uses = symbols(code)
     meta[i] = {
         "original": original,
