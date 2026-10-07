@@ -29,9 +29,43 @@ jobs:
           python -m pip install --upgrade pip
           pip install jupyter nbconvert pandas numpy scikit-learn matplotlib tensorflow optuna geopandas shapely requests xgboost
 
+      - name: Make CI-safe notebook copy
+        run: |
+          python - <<'PY'
+          import json
+
+          src = "UNG_PIDF_Model.ipynb"
+          dst = "UNG_PIDF_Model_ci.ipynb"
+
+          with open(src, "r", encoding="utf-8") as f:
+              nb = json.load(f)
+
+          skipped = []
+          for i, cell in enumerate(nb.get("cells", [])):
+              if cell.get("cell_type") != "code":
+                  continue
+              code = "".join(cell.get("source", []))
+              if (
+                  "from google.colab import files" in code
+                  or "files.upload()" in code
+                  or "drive.mount(" in code
+              ):
+                  skipped.append(i)
+                  cell["source"] = [
+                      "print('CI: skipped Colab-only upload/mount cell')\n"
+                  ]
+                  cell["execution_count"] = None
+                  cell["outputs"] = []
+
+          with open(dst, "w", encoding="utf-8") as f:
+              json.dump(nb, f)
+
+          print("Skipped Colab-only cells:", skipped)
+          PY
+
       - name: Execute notebook
         run: |
-          jupyter nbconvert --to notebook --execute UNG_PIDF_Model.ipynb \
+          jupyter nbconvert --to notebook --execute UNG_PIDF_Model_ci.ipynb \
             --output executed_UNG_PIDF_Model.ipynb \
             --ExecutePreprocessor.timeout=2700 \
             --ExecutePreprocessor.kernel_name=python3
