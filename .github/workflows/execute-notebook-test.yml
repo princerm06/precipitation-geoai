@@ -71,6 +71,7 @@ jobs:
                   or ("elevation" in code.lower() and "pidf" not in code.lower())
                   or "X_elev" in code
                   or "rf_elev" in code
+                  or "feature_importance" in code
               ):
                   skipped.append(i)
                   cell["source"] = [
