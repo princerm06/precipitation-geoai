@@ -68,7 +68,9 @@ jobs:
               # on the current PIDF + MLP/Optuna experiment.
               if (
                   "dem_tiles" in code
-                  or "elevation" in code.lower() and "pidf" not in code.lower()
+                  or ("elevation" in code.lower() and "pidf" not in code.lower())
+                  or "X_elev" in code
+                  or "rf_elev" in code
               ):
                   skipped.append(i)
                   cell["source"] = [
