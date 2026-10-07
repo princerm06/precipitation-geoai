@@ -26,6 +26,21 @@ REQUIRED_MARKERS = (
     'Tuned MLP Spatial Test Metrics',
 )
 
+# Cells from the current PIDF/MLP/Optuna experiment are protected from
+# legacy/transitive skipping. If one of them has a missing dependency, the
+# static preflight reports that dependency instead of silently deleting the
+# experiment cell.
+PROTECTED_CURRENT_MARKERS = (
+    'Full PIDF data points:',
+    'MLP Training vs Validation Loss',
+    'Spatial Train/Validation Split for Hyperparameter Tuning',
+    'study.optimize(objective',
+    'best_params = study.best_params',
+    'Selected training epochs:',
+    'Tuned MLP Spatial Test Metrics',
+    'comparison_models = pd.DataFrame',
+)
+
 
 def source_text(cell):
     return "".join(cell.get("source", []))
@@ -119,8 +134,9 @@ for i, cell in enumerate(nb.get("cells", [])):
 
     explicit = is_explicit_legacy_skip(original)
     inherited = sorted(uses & tainted)
+    protected_current = any(marker in original for marker in PROTECTED_CURRENT_MARKERS)
 
-    if explicit or inherited:
+    if (explicit or inherited) and not protected_current:
         tainted.update(defs)
         reason = (
             f"CI: skipped legacy/Colab cell {i}"
@@ -141,6 +157,12 @@ for i, cell in enumerate(nb.get("cells", [])):
         name for name in uses
         if name not in defined and name not in defs and name not in ALLOWED_PREDEFINED
     )
+
+    # A protected current-experiment cell may reference a name produced by a
+    # skipped legacy cell. Treat that as unresolved explicitly; do not let the
+    # tainted-name filter hide it.
+    if protected_current:
+        missing = sorted(set(missing) | (uses & tainted))
     if missing:
         unresolved.append((i, missing, code[:240]))
 
