@@ -8,9 +8,6 @@ SRC = "UNG_PIDF_Model.ipynb"
 DST = "UNG_PIDF_Model_ci.ipynb"
 
 EXPLICIT_SKIP_PATTERNS = (
-    "from google.colab import files",
-    "files.upload()",
-    "drive.mount(",
     "dem_tiles",
     "_elev",
     "feature_importance",
@@ -76,6 +73,8 @@ def module_symbols(code):
 
 def is_explicit_legacy_skip(code):
     lower = code.lower()
+    # Colab-only upload/mount syntax is handled separately so cells that also
+    # contain real experiment logic are not discarded wholesale.
     if any(pattern in code for pattern in EXPLICIT_SKIP_PATTERNS):
         return True
     if 'open("data.txt"' in code or "open('data.txt'" in code:
@@ -106,7 +105,16 @@ for i, cell in enumerate(nb.get("cells", [])):
         continue
 
     original = source_text(cell)
+
+    # Remove Colab-only lines instead of skipping the whole cell. This preserves
+    # any definitions that share a cell with upload/mount/download helpers.
     code = sanitize_downloads(original)
+    code = "\n".join(
+        line for line in code.splitlines()
+        if "from google.colab import files" not in line
+        and "files.upload()" not in line
+        and "drive.mount(" not in line
+    ) + "\n"
     defs, uses = module_symbols(code)
 
     explicit = is_explicit_legacy_skip(original)
