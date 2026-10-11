@@ -1,9 +1,12 @@
 import builtins
 import json
+import os
 import symtable
 
 SRC = "UNG_PIDF_Model.ipynb"
-DST = "UNG_PIDF_Model_ci.ipynb"
+DST = os.environ.get("OUTPUT_NOTEBOOK", "UNG_PIDF_Model_ci.ipynb")
+CI_SAMPLE_N = int(os.environ.get("PIDF_SAMPLE_N", "50000"))
+CI_OPTUNA_TRIALS = int(os.environ.get("OPTUNA_TRIALS", "3"))
 
 ALLOWED_PREDEFINED = set(dir(builtins)) | {"get_ipython", "display", "__name__"}
 
