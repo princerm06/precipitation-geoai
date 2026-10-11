@@ -8,6 +8,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 os.chdir(REPO_ROOT)
 
+DRIVE_ROOT = Path("/content/drive/MyDrive")
+RESULT_DIR = DRIVE_ROOT / "UNG_GeoAI_Optuna"
+if not DRIVE_ROOT.exists():
+    raise RuntimeError(
+        "Google Drive is not mounted. In a Colab cell run:\n"
+        "from google.colab import drive\n"
+        "drive.mount('/content/drive')"
+    )
+RESULT_DIR.mkdir(parents=True, exist_ok=True)
+
 RETURN_PERIODS = [2, 5, 10, 25, 50, 100, 200]
 DURATIONS = ["60m", "06h", "12h", "24h"]
 
@@ -46,6 +56,8 @@ env = os.environ.copy()
 env["PIDF_SAMPLE_N"] = "250000"
 env["OPTUNA_TRIALS"] = "25"
 env["OUTPUT_NOTEBOOK"] = "UNG_PIDF_Model_full_colab.ipynb"
+env["OPTUNA_STORAGE_URL"] = f"sqlite:///{RESULT_DIR / 'pidf_mlp_optuna.db'}"
+env["OPTUNA_STUDY_NAME"] = "pidf_mlp_spatial_validation_full"
 
 print("Building focused full experiment notebook...")
 subprocess.run(
@@ -55,6 +67,7 @@ subprocess.run(
 )
 
 print("Executing full 250k / 25-trial experiment...")
+print("Optuna checkpoint:", RESULT_DIR / "pidf_mlp_optuna.db")
 subprocess.run(
     [
         "jupyter",
@@ -65,6 +78,8 @@ subprocess.run(
         "UNG_PIDF_Model_full_colab.ipynb",
         "--output",
         "executed_UNG_PIDF_Model_full_colab.ipynb",
+        "--output-dir",
+        str(RESULT_DIR),
         "--ExecutePreprocessor.timeout=7200",
         "--ExecutePreprocessor.kernel_name=python3",
     ],
@@ -73,4 +88,5 @@ subprocess.run(
 
 print()
 print("FULL RUN COMPLETE")
-print("Output: executed_UNG_PIDF_Model_full_colab.ipynb")
+print("Executed notebook:", RESULT_DIR / "executed_UNG_PIDF_Model_full_colab.ipynb")
+print("Optuna study DB:", RESULT_DIR / "pidf_mlp_optuna.db")
