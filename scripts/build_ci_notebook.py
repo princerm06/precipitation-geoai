@@ -7,6 +7,8 @@ SRC = "UNG_PIDF_Model.ipynb"
 DST = os.environ.get("OUTPUT_NOTEBOOK", "UNG_PIDF_Model_ci.ipynb")
 CI_SAMPLE_N = int(os.environ.get("PIDF_SAMPLE_N", "50000"))
 CI_OPTUNA_TRIALS = int(os.environ.get("OPTUNA_TRIALS", "3"))
+OPTUNA_STORAGE_URL = os.environ.get("OPTUNA_STORAGE_URL", "")
+OPTUNA_STUDY_NAME = os.environ.get("OPTUNA_STUDY_NAME", "pidf_mlp_spatial_validation")
 
 ALLOWED_PREDEFINED = set(dir(builtins)) | {"get_ipython", "display", "__name__"}
 
@@ -124,8 +126,56 @@ for i, cell in enumerate(cells):
     )
     code = code.replace(
         "study.optimize(objective, n_trials=25)",
-        f"study.optimize(objective, n_trials={CI_OPTUNA_TRIALS})",
+        (
+            "finished_trials = sum(\n"
+            "    t.state in (optuna.trial.TrialState.COMPLETE, optuna.trial.TrialState.PRUNED)\n"
+            "    for t in study.trials\n"
+            ")\n"
+            f"remaining_trials = max(0, {CI_OPTUNA_TRIALS} - finished_trials)\n"
+            "print('Finished Optuna trials:', finished_trials)\n"
+            "print('Remaining Optuna trials:', remaining_trials)\n"
+            "study.optimize(objective, n_trials=remaining_trials)"
+        ),
     )
+
+    if "def objective(trial):" in code:
+        code = code.replace("patience=8,", "patience=5,")
+        code = code.replace("epochs=100,", "epochs=60,")
+        code = code.replace(
+            "    history_opt = model.fit(\n",
+            "    class TrialPruningCallback(keras.callbacks.Callback):\n"
+            "        def on_epoch_end(self, epoch, logs=None):\n"
+            "            current = (logs or {}).get('val_mae')\n"
+            "            if current is None:\n"
+            "                return\n"
+            "            trial.report(float(current), step=epoch)\n"
+            "            if trial.should_prune():\n"
+            "                raise optuna.TrialPruned()\n"
+            "\n"
+            "    pruning_cb = TrialPruningCallback()\n"
+            "\n"
+            "    history_opt = model.fit(\n",
+        )
+        code = code.replace(
+            "        callbacks=[early_stop],\n",
+            "        callbacks=[early_stop, pruning_cb],\n",
+        )
+
+    if "study = optuna.create_study(" in code and OPTUNA_STORAGE_URL:
+        code = code.replace(
+            'study = optuna.create_study(\n    direction="minimize",\n    study_name="pidf_mlp_spatial_validation",\n)',
+            (
+                "study = optuna.create_study(\n"
+                '    direction="minimize",\n'
+                f'    study_name={OPTUNA_STUDY_NAME!r},\n'
+                f'    storage={OPTUNA_STORAGE_URL!r},\n'
+                "    load_if_exists=True,\n"
+                "    pruner=optuna.pruners.MedianPruner(\n"
+                "        n_startup_trials=5, n_warmup_steps=5, interval_steps=1\n"
+                "    ),\n"
+                ")"
+            ),
+        )
 
     # In CI the NOAA rasters are downloaded deterministically by the workflow,
     # so replace any Colab/upload-derived ASC discovery with a recursive glob.
